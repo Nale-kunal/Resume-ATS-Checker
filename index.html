@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Resume ATS Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full text-center">
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">AI Resume ATS Analyzer</h1>
+    <p class="text-gray-500 mb-6">Upload your resume PDF and get instant ATS score with suggestions 🚀</p>
+
+    <input id="resume" type="file" accept="application/pdf"
+           class="border-2 border-dashed border-gray-300 p-6 w-full rounded-lg cursor-pointer hover:bg-gray-100 mb-4" />
+
+    <button id="analyzeBtn" class="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700">
+      Analyze Resume
+    </button>
+
+    <div id="result" class="mt-6 hidden text-left bg-gray-100 p-4 rounded-xl">
+      <h2 class="text-xl font-semibold text-gray-800">📊 ATS Score:</h2>
+      <p id="score" class="text-2xl font-bold text-blue-700 mt-1"></p>
+      <h3 class="text-lg mt-4 font-semibold text-gray-700">💡 Suggestions:</h3>
+      <ul id="suggestions" class="list-disc ml-6 text-gray-600"></ul>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://nalekunal.app.n8n.cloud/webhook/ats-score"; // Replace with your n8n webhook
+
+    document.getElementById('analyzeBtn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('resume');
+      if (!fileInput.files.length) {
+        alert('Please select a resume PDF.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('data', fileInput.files[0]);
+
+      const resultDiv = document.getElementById('result');
+      resultDiv.classList.add('hidden');
+
+      try {
+        document.getElementById('analyzeBtn').innerText = 'Analyzing... ⏳';
+
+        const response = await axios.post(API_URL, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        const resData = response.data[0]?.body || response.data;
+        const json = typeof resData === 'string' ? JSON.parse(resData) : resData;
+
+        document.getElementById('score').innerText = json.score || "N/A";
+        const suggestionsList = document.getElementById('suggestions');
+        suggestionsList.innerHTML = '';
+        (json.suggestions || []).forEach(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          suggestionsList.appendChild(li);
+        });
+
+        resultDiv.classList.remove('hidden');
+      } catch (err) {
+        alert('Error analyzing resume. Please try again.');
+        console.error(err);
+      } finally {
+        document.getElementById('analyzeBtn').innerText = 'Analyze Resume';
+      }
+    });
+  </script>
+</body>
+</html>
